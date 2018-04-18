@@ -31,9 +31,9 @@ def relu(Z):
 def linear_activation_forward(A_prev, W, b, activation):
     Z, linear_cache = linear_forward(A_prev , W, b)
     if activation == "relu":
-        A = relu(Z)
+        A, _ = relu(Z)
     if activation == "sigmoid":
-        A = sigmoid(Z)
+        A, _ = sigmoid(Z)
     else:
         pass
     return A, linear_cache
@@ -47,7 +47,7 @@ def L_model_forward(X, parameters):
     for i in range(len(parameters)):
         if i == len(parameters)-1:
             activation = "sigmoid"
-        W, b = X[i][0],X[i][1]
+        W, b = parameters[i][0],parameters[i][1]
         A, linear_cache = linear_activation_forward(A, W, b, activation)
         caches_list.append(linear_cache)
 
@@ -119,3 +119,33 @@ def Update_parameters(parameters, grads, learning_rate):
         parameters[i]["b"] = parameters[i]["b"]-learning_rate*db
 
     return parameters
+
+
+def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations):
+    # initialize ->L_model_forward -> compute_cost -> L_model_backward -> update parameters
+    parameters = []
+    costs = []
+
+    initial_params = initialize_parameters(layers_dims)
+
+    for i in range(1,num_iterations+1):
+        AL, caches_List = L_model_forward(X, initial_params)
+        cost = compute_cost(AL, Y)
+        if i% 100 == 0:
+            costs.append(cost)
+        grads = L_model_backward(AL, Y, caches_List)
+        Update_parameters(initial_params, grads, learning_rate)
+
+    return parameters ,costs
+
+def Predict(X, Y, parameters):
+    A, _ = L_model_forward(X, parameters)
+    predict_y = [1 if prediction >= 0.5 else 0 for prediction in A.reshape(A.shape[1])]
+
+    #Calculate Acc
+    denominator = 0
+    for i, y in Y:
+        if y == predict_y[i]:
+            denominator+=1
+
+    return denominator/len(Y)
