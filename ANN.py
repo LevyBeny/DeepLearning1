@@ -4,10 +4,9 @@ import numpy as np
 # initialize the W and b parameters for the network model for each layer
 def initialize_parameters(layer_dims):
     network_params = []
-
     #  W=[prev_layer_dim,current_layer_dim], b=[current_layer_dim]
     for i in range(1, len(layer_dims)):
-        layer_params = {"W": (np.random.randn(layer_dims[i], layer_dims[i-1])),
+        layer_params = {"W": (np.random.randn(layer_dims[i], layer_dims[i-1]))*0.05,
                         "b": (np.zeros(layer_dims[i])).reshape(layer_dims[i], 1)}
         network_params.append(layer_params)
 
@@ -26,7 +25,7 @@ def sigmoid(Z):
     # for i in range(Z.shape[1]):
     #     res[0,i]=1 / (1 + np.exp(-Z[0,i]))
     # return res,Z
-    return 1 / (1 + np.exp(-Z)), Z
+    return np.nan_to_num(1 / (1 + np.exp(-Z))), Z
 
 
 def relu(Z):
@@ -63,7 +62,7 @@ def compute_cost(AL, Y):
     m = Y.shape[1]
     y = Y.reshape(m)
     al = AL.reshape(m)
-    toSum = y * np.log(al) + ((1 - y) * np.log((1 - al)))
+    toSum = np.nan_to_num( y * np.log(al) + ((1 - y) * np.log((1 - al))))
     cost = -1 / float(m) * np.sum(toSum)
     return cost
 
@@ -98,7 +97,7 @@ def relu_backward(dA, activation_cache):
 def sigmoid_backward(dA, activation_cache):
     Z = activation_cache['Z']
     res = 1 / (1 + np.exp(-Z))
-    dZ = dA * res * (1 - res)
+    dZ =np.nan_to_num( dA * res * (1 - res))
     return dZ
 
 
@@ -143,6 +142,7 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations):
     for i in range(1, num_iterations + 1):
         AL, caches_List = L_model_forward(X, parameters)
         cost = compute_cost(AL, Y)
+        print(str(i)+" - " + str(cost)+"\n")
         if i % 100 == 0:
             costs.append(cost)
         grads = L_model_backward(AL, Y, caches_List)
