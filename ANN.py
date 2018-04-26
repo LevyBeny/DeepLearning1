@@ -3,12 +3,11 @@ import numpy as np
 
 # initialize the W and b parameters for the network model for each layer
 def initialize_parameters(layer_dims):
-    network_params = []
-    #  W=[prev_layer_dim,current_layer_dim], b=[current_layer_dim]
+    network_params = {}
+
     for i in range(1, len(layer_dims)):
-        layer_params = {"W": (np.random.randn(layer_dims[i], layer_dims[i-1]))*0.05,
-                        "b": (np.zeros(layer_dims[i])).reshape(layer_dims[i], 1)}
-        network_params.append(layer_params)
+        network_params['W' + str(i)] = (np.random.randn(layer_dims[i], layer_dims[i - 1])) * 0.05
+        network_params['b' + str(i)] = (np.zeros(layer_dims[i])).reshape(layer_dims[i], 1)
 
     return network_params
 
@@ -22,7 +21,7 @@ def linear_forward(A, W, b):
 
 # The sigmoid forward propagation calculation
 def sigmoid(Z):
-    return np.nan_to_num(1 / (1 + np.exp(-Z))), Z
+    return 1 / (1 + np.exp(-Z)), Z
 
 
 # The relu forward propagation calculation
@@ -48,10 +47,10 @@ def L_model_forward(X, parameters):
     caches_list = []
     activation = "relu"
 
-    for i in range(len(parameters)):
+    for i in range(1, len(parameters) + 1):
         if i == len(parameters) - 1:
             activation = "sigmoid"
-        W, b = parameters[i]["W"], parameters[i]["b"]
+        W, b = parameters["W" + str(i)], parameters["b" + str(i)]
         A, linear_cache = linear_activation_forward(A, W, b, activation)
         caches_list.append(linear_cache)
 
@@ -63,7 +62,7 @@ def compute_cost(AL, Y):
     m = Y.shape[1]
     y = Y.reshape(m)
     al = AL.reshape(m)
-    toSum = np.nan_to_num( y * np.log(al) + ((1 - y) * np.log((1 - al))))
+    toSum = np.nan_to_num(y * np.log(al) + ((1 - y) * np.log((1 - al))))
     cost = -1 / float(m) * np.sum(toSum)
     return cost
 
@@ -102,7 +101,7 @@ def relu_backward(dA, activation_cache):
 def sigmoid_backward(dA, activation_cache):
     Z = activation_cache['Z']
     res = 1 / (1 + np.exp(-Z))
-    dZ =np.nan_to_num( dA * res * (1 - res))
+    dZ = dA * res * (1 - res)
     return dZ
 
 
@@ -113,12 +112,12 @@ def L_model_backward(AL, Y, caches):
 
     # Last layer - sigmoid
     dA, dW, db = linear_activation_backward(dAL, caches[len(caches) - 1], "sigmoid")
-    grads["dA" + str(len(caches) - 1)] = dA
-    grads["dW" + str(len(caches) - 1)] = dW
-    grads["db" + str(len(caches) - 1)] = db
+    grads["dA" + str(len(caches))] = dA
+    grads["dW" + str(len(caches))] = dW
+    grads["db" + str(len(caches))] = db
 
     # Rest of the layers - relu
-    for layer in range(len(caches) - 2, -1, -1):
+    for layer in range(len(caches) - 1, 0, -1):
         dA, dW, db = linear_activation_backward(dA, caches[layer], "relu")
         grads["dA" + str(layer)] = dA
         grads["dW" + str(layer)] = dW
@@ -129,11 +128,11 @@ def L_model_backward(AL, Y, caches):
 
 # Update the W and b parameters accortding to the gradients and the learning rate
 def Update_parameters(parameters, grads, learning_rate):
-    for i in range(len(parameters)):
+    for i in range(1,len(parameters)+1):
         dW = grads["dW" + str(i)]
         db = grads["db" + str(i)]
-        parameters[i]["W"] = parameters[i]["W"] - learning_rate * dW
-        parameters[i]["b"] = parameters[i]["b"] - learning_rate * db
+        parameters["W"+str(i)] = parameters["W"+str(i)] - learning_rate * dW
+        parameters["b"+str(i)] = parameters["b"+str(i)] - learning_rate * db
 
     return parameters
 
@@ -144,17 +143,16 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations):
 
     costs = []
     layers_dims.insert(0, X.shape[0])
-    initial_params = initialize_parameters(layers_dims)
-    parameters = initial_params
+    parameters = initialize_parameters(layers_dims)
 
     for i in range(1, num_iterations + 1):
         AL, caches_List = L_model_forward(X, parameters)
         cost = compute_cost(AL, Y)
         if i % 100 == 0:
             costs.append(cost)
-            print("cost - "+str(i)+":"+str(cost))
+            print("cost - " + str(i) + ":" + str(cost))
         grads = L_model_backward(AL, Y, caches_List)
-        parameters=Update_parameters(initial_params, grads, learning_rate)
+        parameters = Update_parameters(parameters, grads, learning_rate)
 
     return parameters, costs
 
@@ -162,12 +160,12 @@ def L_layer_model(X, Y, layers_dims, learning_rate, num_iterations):
 # Predict the expected labels of the X data using the trained model. returns the model accuracy.
 def Predict(X, Y, parameters):
     A, _ = L_model_forward(X, parameters)
-    predict_y = [1 if prediction >= 0.5 else 0 for prediction in A.reshape(A.shape[1])]
+    predict_y = [1.0 if prediction >= 0.5 else 0.0 for prediction in A.reshape(A.shape[1])]
 
     # Calculate Accuracy
     denominator = 0.0
     for i in range(Y.shape[1]):
-        if Y[0,i] == predict_y[i]:
+        if Y[0, i] == predict_y[i]:
             denominator += 1
 
     return denominator / Y.shape[1]
