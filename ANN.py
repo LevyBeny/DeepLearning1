@@ -15,7 +15,7 @@ def initialize_parameters(layer_dims):
 # The computation of the linear part of the forward propagation
 def linear_forward(A, W, b):
     Z = W @ A + b
-    linear_cache = {"A_prev": A, "W": W, "b": b, "Z": Z}
+    linear_cache = {"A_prev": A, "W": W, "b": b}
     return Z, linear_cache
 
 
@@ -31,14 +31,15 @@ def relu(Z):
 
 # Calculates both linear and activation for forward propagation using the linear and activation functions.
 def linear_activation_forward(A_prev, W, b, activation):
-    Z, linear_cache = linear_forward(A_prev, W, b)
+    cache = {}
+    Z, cache['linear_cache'] = linear_forward(A_prev, W, b)
+
     if activation == "relu":
-        A, _ = relu(Z)
-    if activation == "sigmoid":
-        A, _ = sigmoid(Z)
-    else:
-        pass
-    return A, linear_cache
+        A, cache['activation_cache'] = relu(Z)
+    elif activation == "sigmoid":
+        A, cache['activation_cache'] = sigmoid(Z)
+
+    return A, cache
 
 
 # Applies the forward propagation process
@@ -46,13 +47,13 @@ def L_model_forward(X, parameters):
     A = X
     caches_list = []
     activation = "relu"
-
-    for i in range(1, len(parameters) + 1):
-        if i == len(parameters) - 1:
+    num_of_layers = int(len(parameters.keys())/2)
+    for i in range(1, num_of_layers + 1):
+        if i == num_of_layers:
             activation = "sigmoid"
         W, b = parameters["W" + str(i)], parameters["b" + str(i)]
-        A, linear_cache = linear_activation_forward(A, W, b, activation)
-        caches_list.append(linear_cache)
+        A, cache = linear_activation_forward(A, W, b, activation)
+        caches_list.append(cache)
 
     return A, caches_list
 
@@ -83,23 +84,23 @@ def linear_backward(dZ, cache):
 # Calculates both linear and activation for forward propagation using the linear and activation functions.
 def linear_activation_backward(dA, cache, activation):
     if activation == "relu":
-        dZ = relu_backward(dA, cache)
+        dZ = relu_backward(dA, cache['activation_cache'])
     else:
-        dZ = sigmoid_backward(dA, cache)
+        dZ = sigmoid_backward(dA, cache['activation_cache'])
 
-    return linear_backward(dZ, cache)
+    return linear_backward(dZ, cache['linear_cache'])
 
 
 # The computation of the relu function backward propagation
 def relu_backward(dA, activation_cache):
     dZ = np.array(dA, copy=True)
-    dZ[activation_cache["Z"] <= 0] = 0
+    dZ[activation_cache <= 0] = 0
     return dZ
 
 
 # The computation of the sigmoid function backward propagation
 def sigmoid_backward(dA, activation_cache):
-    Z = activation_cache['Z']
+    Z = activation_cache
     res = 1 / (1 + np.exp(-Z))
     dZ = dA * res * (1 - res)
     return dZ
@@ -111,14 +112,14 @@ def L_model_backward(AL, Y, caches):
     dAL = -(np.divide(Y, AL) - np.divide(1 - Y, 1 - AL))
 
     # Last layer - sigmoid
-    dA, dW, db = linear_activation_backward(dAL, caches[len(caches) - 1], "sigmoid")
+    dA, dW, db = linear_activation_backward(dAL, caches[- 1], "sigmoid")
     grads["dA" + str(len(caches))] = dA
     grads["dW" + str(len(caches))] = dW
     grads["db" + str(len(caches))] = db
 
     # Rest of the layers - relu
     for layer in range(len(caches) - 1, 0, -1):
-        dA, dW, db = linear_activation_backward(dA, caches[layer], "relu")
+        dA, dW, db = linear_activation_backward(dA, caches[layer-1], "relu")
         grads["dA" + str(layer)] = dA
         grads["dW" + str(layer)] = dW
         grads["db" + str(layer)] = db
@@ -128,11 +129,12 @@ def L_model_backward(AL, Y, caches):
 
 # Update the W and b parameters accortding to the gradients and the learning rate
 def Update_parameters(parameters, grads, learning_rate):
-    for i in range(1,len(parameters)+1):
+    num_of_layers = int(len(parameters.keys())/2)
+    for i in range(1, num_of_layers):
         dW = grads["dW" + str(i)]
         db = grads["db" + str(i)]
-        parameters["W"+str(i)] = parameters["W"+str(i)] - learning_rate * dW
-        parameters["b"+str(i)] = parameters["b"+str(i)] - learning_rate * db
+        parameters["W" + str(i)] = parameters["W" + str(i)] - learning_rate * dW
+        parameters["b" + str(i)] = parameters["b" + str(i)] - learning_rate * db
 
     return parameters
 
